@@ -1,0 +1,5 @@
+-- Your SQL goes here
+CREATE TABLE notes (
+  id VARCHAR NOT NULL PRIMARY KEY,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)

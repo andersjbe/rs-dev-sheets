@@ -33,7 +33,7 @@ pub async fn add_user(
     let user = web::block(move || {
         let mut conn = pool.get()?;
 
-        actions::insert_new_user(&mut conn, &form.name)
+        actions::insert_new_user(&mut conn, form.0)
     })
     .await?
     .map_err(error::ErrorInternalServerError)?;
