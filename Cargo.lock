@@ -1389,6 +1389,7 @@ dependencies = [
  "once_cell",
  "pwhash",
  "serde",
+ "serde_json",
  "typeshare",
  "uuid",
 ]

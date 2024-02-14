@@ -11,6 +11,7 @@ use actix_web::{
 };
 
 use diesel::{prelude::*, r2d2};
+use once_cell::sync::Lazy;
 use rs_dev_sheets::DbPool;
 
 mod actions;
@@ -19,9 +20,10 @@ mod handlers;
 mod models;
 mod routes;
 mod schema;
-mod utils;
 
 const ONE_MINUTE: Duration = Duration::minutes(1);
+static SECRET_KEY: Lazy<String> =
+    Lazy::new(|| std::env::var("SECRET_KEY").unwrap_or_else(|_| "0123".repeat(16)));
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -32,7 +34,6 @@ async fn main() -> std::io::Result<()> {
     // let private_key_base64 =
     //     std::env::var("PRIVATE_KEY").expect("Private key must be set as an environment variable");
     // let secret_key = Key::from(base64::decode(private_key_base64).unwrap());
-    let secret_key = Key::generate();
 
     // initialize DB pool outside of `HttpServer::new` so that it is shared across all workers
     let pool = initialize_db_pool();
@@ -45,11 +46,14 @@ async fn main() -> std::io::Result<()> {
             .configure(routes::routes)
             .wrap(IdentityMiddleware::default())
             .wrap(
-                SessionMiddleware::builder(CookieSessionStore::default(), secret_key.clone())
-                    .cookie_name("dev-sheets-auth".to_owned())
-                    .cookie_secure(false)
-                    .session_lifecycle(PersistentSession::default().session_ttl(ONE_MINUTE))
-                    .build(),
+                SessionMiddleware::builder(
+                    CookieSessionStore::default(),
+                    Key::from(SECRET_KEY.as_bytes()),
+                )
+                .cookie_name("dev-sheets-auth".to_owned())
+                .cookie_secure(false)
+                .session_lifecycle(PersistentSession::default().session_ttl(ONE_MINUTE))
+                .build(),
             )
             .wrap(middleware::Logger::default())
     })

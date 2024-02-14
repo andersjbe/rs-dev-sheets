@@ -13,7 +13,7 @@ pub struct User {
     pub username: String,
     pub email: String,
     #[typeshare(skip)]
-    #[serde(skip_serializing)]
+    #[serde(skip)]
     pub pw_hash: String,
     pub profile_image_url: String,
     pub created_at: chrono::NaiveDateTime,
@@ -27,4 +27,23 @@ pub struct NewUser {
     pub email: String,
     pub password: String,
     pub profile_image_url: Option<String>,
+}
+
+#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserLogin {
+    pub email: String,
+    pub password: String,
+}
+
+#[typeshare]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SlimUser {
+    pub email: String,
+}
+
+impl From<User> for SlimUser {
+    fn from(user: User) -> Self {
+        SlimUser { email: user.email }
+    }
 }

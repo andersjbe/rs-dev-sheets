@@ -1,10 +1,11 @@
-use chrono::NaiveDateTime;
 use diesel::prelude::*;
-use pwhash::bcrypt::hash;
+use pwhash::bcrypt::{hash, verify};
 use uuid::Uuid;
 
-use crate::errors::ServiceError;
-use crate::models::{NewUser, User};
+use crate::{
+    errors::ServiceError,
+    models::{NewUser, User, UserLogin},
+};
 
 /// An error that can sent and shared across threads
 type DbError = Box<dyn std::error::Error + Send + Sync>;
@@ -18,6 +19,24 @@ pub fn find_user_by_uid(conn: &mut SqliteConnection, uid: Uuid) -> Result<Option
         .optional()?;
 
     Ok(user)
+}
+
+pub fn verify_user(
+    conn: &mut SqliteConnection,
+    auth_data: UserLogin,
+) -> Result<User, ServiceError> {
+    use crate::schema::users::dsl::{email, users};
+
+    let mut items = users.filter(email.eq(auth_data.email)).load::<User>(conn)?;
+
+    if let Some(user) = items.pop() {
+        let matching = verify(&auth_data.password, &user.pw_hash);
+        if matching {
+            return Ok(user.into());
+        }
+    }
+
+    Err(ServiceError::Unauthorized)
 }
 
 pub fn insert_new_user(conn: &mut SqliteConnection, user_data: NewUser) -> Result<User, DbError> {
